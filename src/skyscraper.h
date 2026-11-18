@@ -91,6 +91,7 @@ private:
     void prepareIgdb(NetComm &netComm, QEventLoop &q);
     void prepareScreenscraper(NetComm &netComm, QEventLoop &q);
     void loadAliasMap();
+    void loadChecksumDat();
     void loadMameMap();
     void loadWhdLoadMap();
     void setRegionPrios();

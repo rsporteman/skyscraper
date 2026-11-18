@@ -85,6 +85,8 @@
 ;innerParenthesesReplace=") ("
 ;ignoreYearInFilename="false"
 ;searchStem=""
+# only absolute path allowed, only used by the screenscraper module
+;checksumDat="/full/path/to/checksums.dat"
 ;theInFront="false"
 
 ; The following is an example of configs that only affect the 'snes' platform.
@@ -135,6 +137,7 @@
 ;addExtensions="*.zst *.rom"
 ;subdirs="true"
 ;searchStem=".desktop"
+;checksumDat="/home/pi/.skyscraper/snes.dat"
 
 ;[zxspectrum]
 ;gameBaseFile="/path/to/converted-mdb-gamebase/gb-zxspectrum.sqlite3"

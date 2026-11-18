@@ -103,6 +103,7 @@ HEADERS += \
            src/attractmode.h \
            src/batocera.h \
            src/cache.h \
+           src/checksumdat.h \
            src/cli.h \
            src/compositor.h \
            src/config.h \
@@ -160,6 +161,7 @@ SOURCES += src/main.cpp \
            src/attractmode.cpp \
            src/batocera.cpp \
            src/cache.cpp \
+           src/checksumdat.cpp \
            src/cli.cpp \
            src/compositor.cpp \
            src/config.cpp \

@@ -1353,6 +1353,7 @@ void Skyscraper::showHint() { Cli::showHint(); }
 void Skyscraper::prepareScraping() {
     loadAliasMap();
     loadMameMap();
+    loadChecksumDat();
 
     setRegionPrios();
     setLangPrios();
@@ -1631,6 +1632,30 @@ void Skyscraper::loadAliasMap() {
         }
         aliasMapFile.close();
     }
+}
+
+void Skyscraper::loadChecksumDat() {
+    if (config.checksumDatFile.isEmpty()) {
+        return;
+    }
+    if (config.scraper != "screenscraper") {
+        ncprintf("\033[1;33mParameter checksumDat is ignored. Only applicable "
+                 "with the 'screenscraper' scraping module.\033[0m\n\n");
+        return;
+    }
+    QString error;
+    if (!config.checksumDat.load(config.checksumDatFile, error)) {
+        emit die(1, error, "The checksumDat parameter cannot be used");
+        return;
+    }
+    ncprintf("Loaded %d precalculated checksum(s) from '%s'",
+             config.checksumDat.size(),
+             config.checksumDatFile.toUtf8().constData());
+    if (config.checksumDat.skipped() > 0) {
+        ncprintf(", skipped %d incomplete entr%s", config.checksumDat.skipped(),
+                 config.checksumDat.skipped() == 1 ? "y" : "ies");
+    }
+    ncprintf("\n\n");
 }
 
 void Skyscraper::loadMameMap() {

@@ -215,6 +215,20 @@ void RuntimeCfg::applyConfigIni(CfgType type, QSettings *settings,
                 }
                 continue;
             }
+            if (k == "checksumDat") {
+                if (!validateFileParameter(k, v)) {
+                    emit die(
+                        1,
+                        QString(
+                            "cannot access %1= with path '%2' in section [%3]")
+                            .arg(k)
+                            .arg(v)
+                            .arg(section),
+                        "No such file or directory");
+                }
+                config->checksumDatFile = v;
+                continue;
+            }
             if (k == "emulator") {
                 if (config->frontend == "attractmode") {
                     config->frontendExtra = v;

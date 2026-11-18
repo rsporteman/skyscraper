@@ -94,6 +94,7 @@ This is an alphabetical index of all configuration options their usage level and
 | [cacheScreenshots](CONFIGINI.md#cachescreenshots)           | Basic          |    Y     |       Y        |                |       Y       |
 | [cacheTextures](CONFIGINI.md#cachetextures)                 | Basic          |    Y     |       Y        |                |       Y       |
 | [cacheWheels](CONFIGINI.md#cachewheels)                     | Basic          |    Y     |       Y        |                |       Y       |
+| [checksumDat](CONFIGINI.md#checksumdat)                     | Advanced       |    Y     |       Y        |                |               |
 | [cropBlack](CONFIGINI.md#cropblack)                         | Basic          |    Y     |       Y        |       Y        |               |
 | [emulator](CONFIGINI.md#emulator)                           | Advanced       |    Y     |       Y        |       Y        |               |
 | [endAt](CONFIGINI.md#endat)                                 | Advanced       |          |       Y        |       Y        |               |
@@ -761,6 +762,33 @@ If you want to enable this option for all extensions for a platform then use the
 
 Default value: unset  
 Allowed in sections: `[main]`, `[<PLATFORM>]`
+
+---
+
+#### checksumDat
+
+Path to a DAT file in the Logiqx XML format (as used by No-Intro, Redump, ClrMamePro or RomVault) with precalculated checksums of your game files. To identify a game, Screenscraper needs the CRC32, MD5 and SHA1 of the file. Without this option Skyscraper reads every game file completely to calculate them. For large files (e.g., CHD or ISO images of several GB) or for files on slow storage (network shares, the Windows drives in WSL, USB 2.0) this takes minutes per game. With this option the checksums are taken from the DAT instead and the game file is not read at all.
+
+A game file matches a `<rom/>` element of the DAT when the filename (without any directory part) and the size in bytes are equal. Only entries with all of `size`, `crc`, `md5` and `sha1` attributes are used. If no entry matches, or if there are entries with the same filename and size but different checksums, Skyscraper falls back to calculating the checksums from the file.
+
+```xml
+<?xml version="1.0"?>
+<datafile>
+  <game name="Bully (USA)">
+    <rom name="Bully (USA).chd" size="2182974250" crc="1a2b3c4d" md5="0123456789abcdef0123456789abcdef" sha1="0123456789abcdef0123456789abcdef01234567"/>
+  </game>
+</datafile>
+```
+
+If your game files are verified dumps you can use the DAT of the dump group directly. If you have converted or compressed your game files (e.g., to CHD) you need a DAT with the checksums of the converted files: Any ROM manager can create one, or record the checksums at the time you convert your files.
+
+!!! note
+
+    Only applies to Screenscraper queries. The checksums in the DAT are trusted as they are: If you change a game file, also update the DAT.
+
+Default value: unset  
+Allowed in sections: `[main]`, `[<PLATFORM>]`  
+Always provide an absolute path as value for this parameter.
 
 ---
 

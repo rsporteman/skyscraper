@@ -337,6 +337,71 @@ private slots:
         settings.searchStem = settings.addExtensions;
         match(tests);
     }
+
+    void testScreenscraperChecksumDat() {
+        scraper = new ScreenScraper(&settings, NULL);
+        settings.arcadePlatform = true;
+        settings.platform = "mame-libretro";
+        settings.searchStem = "";
+
+        // zaxxon.zip is 32768 bytes. The checksums in the DAT are deliberately
+        // not the ones of the file: if they show up in the query, the file
+        // content was not read.
+        QString err;
+        QVERIFY(settings.checksumDat.loadFromData(
+            "<datafile><game name=\"zaxxon\">"
+            "<rom name=\"zaxxon.zip\" size=\"32768\" crc=\"0badf00d\" "
+            "md5=\"00112233445566778899aabbccddeeff\" "
+            "sha1=\"00112233445566778899aabbccddeeff00112233\"/>"
+            "<rom name=\"empty (0 bytes).zip\" size=\"0\" crc=\"00000001\" "
+            "md5=\"00000000000000000000000000000001\" "
+            "sha1=\"0000000000000000000000000000000000000001\"/>"
+            "</game></datafile>",
+            err));
+
+        QStringList fromDat = {
+            "crc=0BADF00D", "md5=00112233445566778899AABBCCDDEEFF",
+            "sha1=00112233445566778899AABBCCDDEEFF00112233", "romnom=zaxxon",
+            "romtaille=32768"};
+        QStringList computed = {
+            "crc=BB2E0146", "md5=852605F01A3E2D21FBAF35FCAB385B94",
+            "sha1=05F32B2286ECE2F30CB1EFBC2B4C7C2AEF2F9662",
+            "romnom=zaxxon", "romtaille=32768"};
+
+        QMap<QString, QPair<QString, QStringList>> tests = {
+            {"Screenscraper, checksums taken from checksumDat",
+             QPair<QString, QStringList>("./rom_samples/zaxxon.zip",
+                                         {fromDat.join("&")})},
+            {"Screenscraper, 0 byte ROM is not looked up in checksumDat",
+             QPair<QString, QStringList>("./rom_samples/empty (0 bytes).zip",
+                                         {"romnom=empty%20(0%20bytes)"})},
+        };
+        match(tests);
+
+        // size in DAT does not match the file: checksums are calculated
+        QVERIFY(settings.checksumDat.loadFromData(
+            "<datafile><game name=\"zaxxon\">"
+            "<rom name=\"zaxxon.zip\" size=\"32767\" crc=\"0badf00d\" "
+            "md5=\"00112233445566778899aabbccddeeff\" "
+            "sha1=\"00112233445566778899aabbccddeeff00112233\"/>"
+            "</game></datafile>",
+            err));
+        tests = {
+            {"Screenscraper, checksumDat size mismatch",
+             QPair<QString, QStringList>("./rom_samples/zaxxon.zip",
+                                         {computed.join("&")})},
+        };
+        match(tests);
+
+        // empty DAT: checksums are calculated
+        QVERIFY(settings.checksumDat.loadFromData("<datafile/>", err));
+        tests = {
+            {"Screenscraper, empty checksumDat",
+             QPair<QString, QStringList>("./rom_samples/zaxxon.zip",
+                                         {computed.join("&")})},
+        };
+        match(tests);
+    }
 };
 
 QTEST_MAIN(TestGetSearchNames)

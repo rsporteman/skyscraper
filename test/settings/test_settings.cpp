@@ -6,7 +6,9 @@
 #include "settings.h"
 
 #include <QDebug>
+#include <QSignalSpy>
 #include <QStringBuilder>
+#include <QTemporaryDir>
 #include <QTest>
 
 class TestSettings : public QObject {
@@ -684,6 +686,75 @@ private slots:
         QCOMPARE(config.userCreds, "");
         // restore for next test run
         settings.setValue("userCreds","user_scrs:pass\"wo rd:_");
+    }
+
+    void testConfigChecksumDat() {
+        Settings config;
+        if (!Platform::get().loadConfig()) {
+            qWarning() << "*** AIEEE !!!\n";
+            exit(1);
+        }
+        QCommandLineParser *parser = new QCommandLineParser();
+        Cli::createParser(parser, "psx");
+        parser->parse({"x", "-p", "psx"});
+        RuntimeCfg *rtConf = new RuntimeCfg(&config, parser);
+        QSignalSpy dieSpy(rtConf, &RuntimeCfg::die);
+
+        bool inputFolderSet = false;
+        bool gameListFolderSet = false;
+        bool mediaFolderSet = false;
+
+        QTemporaryDir tmp;
+        QVERIFY(tmp.isValid());
+        const QString mainDat = tmp.filePath("main.dat");
+        const QString psxDat = tmp.filePath("psx.dat");
+        for (const auto &p : {mainDat, psxDat}) {
+            QFile f(p);
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write("<datafile/>");
+            f.close();
+        }
+
+        QSettings settings(tmp.filePath("config_checksumdat.ini"),
+                           QSettings::IniFormat);
+        settings.setValue("main/checksumDat", mainDat);
+        settings.setValue("psx/checksumDat", psxDat);
+        settings.setValue("snes/checksumDat", tmp.filePath("missing.dat"));
+        settings.setValue("n64/checksumDat", "relative/path.dat");
+
+        // [main]
+        settings.beginGroup("main");
+        rtConf->applyConfigIni(RuntimeCfg::CfgType::MAIN, &settings,
+                               inputFolderSet, gameListFolderSet,
+                               mediaFolderSet);
+        settings.endGroup();
+        QCOMPARE(config.checksumDatFile, mainDat);
+        QCOMPARE(dieSpy.count(), 0);
+
+        // [psx] overrides [main]
+        settings.beginGroup("psx");
+        rtConf->applyConfigIni(RuntimeCfg::CfgType::PLATFORM, &settings,
+                               inputFolderSet, gameListFolderSet,
+                               mediaFolderSet);
+        settings.endGroup();
+        QCOMPARE(config.checksumDatFile, psxDat);
+        QCOMPARE(dieSpy.count(), 0);
+
+        // non existent file
+        settings.beginGroup("snes");
+        rtConf->applyConfigIni(RuntimeCfg::CfgType::PLATFORM, &settings,
+                               inputFolderSet, gameListFolderSet,
+                               mediaFolderSet);
+        settings.endGroup();
+        QCOMPARE(dieSpy.count(), 1);
+
+        // relative path
+        settings.beginGroup("n64");
+        rtConf->applyConfigIni(RuntimeCfg::CfgType::PLATFORM, &settings,
+                               inputFolderSet, gameListFolderSet,
+                               mediaFolderSet);
+        settings.endGroup();
+        QCOMPARE(dieSpy.count(), 2);
     }
 };
 

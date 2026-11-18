@@ -22,6 +22,7 @@ HEADERS += \
             ../../src/abstractscraper.h \
             ../../src/arcadedb.h \
             ../../src/cache.h \
+            ../../src/checksumdat.h \
             ../../src/cli.h \
             ../../src/config.h \
             ../../src/crc32.h \
@@ -45,6 +46,7 @@ SOURCES += test_getsearchnames.cpp \
             ../../src/abstractscraper.cpp \
             ../../src/arcadedb.cpp \
             ../../src/cache.cpp \
+            ../../src/checksumdat.cpp \
             ../../src/cli.cpp \
             ../../src/config.cpp \
             ../../src/crc32.cpp \

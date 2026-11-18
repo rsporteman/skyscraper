@@ -21,6 +21,7 @@ QMAKE_POST_LINK += cp -f $$shell_quote($$shell_path($${PWD}/../../platforms_idma
 # Input
 HEADERS += \
             ../../src/cache.h \
+            ../../src/checksumdat.h \
             ../../src/cli.h \
             ../../src/config.h \
             ../../src/gameentry.h \
@@ -33,6 +34,7 @@ HEADERS += \
             ../../src/strtools.h
 SOURCES += test_settings.cpp \
             ../../src/cache.cpp \
+            ../../src/checksumdat.cpp \
             ../../src/cli.cpp \
             ../../src/config.cpp \
             ../../src/gameentry.cpp \

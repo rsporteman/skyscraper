@@ -527,6 +527,61 @@ QList<QString> ScreenScraper::getSearchNames(const QFileInfo &info,
     QString searchName = lookupSearchName(info, baseName, debug);
 
     QList<QString> hashList;
+    QString crcResult;
+    QString md5Result;
+    QString sha1Result;
+
+    ChecksumDat::Checksums known;
+    if (info.size() != 0 && !config->checksumDat.isEmpty() &&
+        config->checksumDat.lookup(info.fileName(), info.size(), known)) {
+        // Precalculated checksums: no need to read the (possibly huge) file
+        debug.append("Checksums from checksumDat: '" + info.fileName() + "'\n");
+        crcResult = known.crc;
+        md5Result = known.md5;
+        sha1Result = known.sha1;
+    } else {
+        computeChecksums(info, crcResult, md5Result, sha1Result);
+    }
+
+    // For some reason the APIv2 example from their website does not url encode
+    // '(' and ')' so I've excluded them
+    hashList.append(QUrl::toPercentEncoding(searchName, "()"));
+    hashList.append(crcResult);
+    hashList.append(md5Result);
+    hashList.append(sha1Result);
+
+    if (info.size() != 0) {
+        QString fnWithExt = info.fileName();
+        bool searchByStem = false;
+        if (!config->searchStem.isEmpty()) {
+            for (const auto &e : config->searchStem.remove('*').split(' ')) {
+                if (fnWithExt.endsWith(e, Qt::CaseInsensitive)) {
+                    searchByStem = true;
+                    QString romName = fnWithExt.replace(
+                        fnWithExt.length() - e.length(), e.length(), "");
+                    searchNames.append("romnom=" +
+                                       QUrl::toPercentEncoding(romName, "()"));
+                    break;
+                }
+            }
+        }
+        if (!searchByStem) {
+            searchNames.append(
+                "crc=" + hashList.at(1) + "&md5=" + hashList.at(2) +
+                "&sha1=" + hashList.at(3) + "&romnom=" + hashList.at(0) +
+                "&romtaille=" + QString::number(info.size()));
+        }
+    } else {
+        // file not accessible or size is 0
+        // query only by game title
+        searchNames.append("romnom=" + hashList.at(0));
+    }
+
+    return searchNames;
+}
+
+void ScreenScraper::computeChecksums(const QFileInfo &info, QString &crcResult,
+                                     QString &md5Result, QString &sha1Result) {
     QCryptographicHash md5(QCryptographicHash::Md5);
     QCryptographicHash sha1(QCryptographicHash::Sha1);
     Crc32 crc;
@@ -612,54 +667,21 @@ QList<QString> ScreenScraper::getSearchNames(const QFileInfo &info,
         }
     }
 
-    QString crcResult = QString::number(crc.releaseInstance(1), 16);
+    crcResult = QString::number(crc.releaseInstance(1), 16);
     while (crcResult.length() < 8) {
         crcResult.prepend("0");
     }
-    QString md5Result = md5.result().toHex();
+    md5Result = md5.result().toHex();
     while (md5Result.length() < 32) {
         md5Result.prepend("0");
     }
-    QString sha1Result = sha1.result().toHex();
+    sha1Result = sha1.result().toHex();
     while (sha1Result.length() < 40) {
         sha1Result.prepend("0");
     }
-
-    // For some reason the APIv2 example from their website does not url encode
-    // '(' and ')' so I've excluded them
-    hashList.append(QUrl::toPercentEncoding(searchName, "()"));
-    hashList.append(crcResult.toUpper());
-    hashList.append(md5Result.toUpper());
-    hashList.append(sha1Result.toUpper());
-
-    if (info.size() != 0) {
-        QString fnWithExt = info.fileName();
-        bool searchByStem = false;
-        if (!config->searchStem.isEmpty()) {
-            for (const auto &e : config->searchStem.remove('*').split(' ')) {
-                if (fnWithExt.endsWith(e, Qt::CaseInsensitive)) {
-                    searchByStem = true;
-                    QString romName = fnWithExt.replace(
-                        fnWithExt.length() - e.length(), e.length(), "");
-                    searchNames.append("romnom=" +
-                                       QUrl::toPercentEncoding(romName, "()"));
-                    break;
-                }
-            }
-        }
-        if (!searchByStem) {
-            searchNames.append(
-                "crc=" + hashList.at(1) + "&md5=" + hashList.at(2) +
-                "&sha1=" + hashList.at(3) + "&romnom=" + hashList.at(0) +
-                "&romtaille=" + QString::number(info.size()));
-        }
-    } else {
-        // file not accessible or size is 0
-        // query only by game title
-        searchNames.append("romnom=" + hashList.at(0));
-    }
-
-    return searchNames;
+    crcResult = crcResult.toUpper();
+    md5Result = md5Result.toUpper();
+    sha1Result = sha1Result.toUpper();
 }
 
 QString ScreenScraper::applyQuerySearchName(QString query) {

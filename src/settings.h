@@ -26,6 +26,7 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+#include "checksumdat.h"
 #include "nocolor.h"
 
 #include <QCommandLineParser>
@@ -120,6 +121,9 @@ struct Settings {
     bool spaceCheck = true;
     QString scummIni = "";
     QString gameBaseFile;
+    // Path of a Logiqx XML DAT with precalculated checksums (screenscraper)
+    QString checksumDatFile = "";
+    ChecksumDat checksumDat;
 
     int romLimit = -1;
 
@@ -227,6 +231,7 @@ private:
         {"cacheScreenshots",        QPair<QString, int>("bool", CfgType::MAIN | CfgType::PLATFORM |                     CfgType::SCRAPER )},
         {"cacheTextures",           QPair<QString, int>("bool", CfgType::MAIN | CfgType::PLATFORM |                     CfgType::SCRAPER )},
         {"cacheWheels",             QPair<QString, int>("bool", CfgType::MAIN | CfgType::PLATFORM |                     CfgType::SCRAPER )},
+        {"checksumDat",             QPair<QString, int>("str",  CfgType::MAIN | CfgType::PLATFORM                                        )},
         {"cropBlack",               QPair<QString, int>("bool", CfgType::MAIN | CfgType::PLATFORM | CfgType::FRONTEND                    )},
         {"emulator",                QPair<QString, int>("str",  CfgType::MAIN | CfgType::PLATFORM | CfgType::FRONTEND                    )},
         {"endAt",                   QPair<QString, int>("str",                  CfgType::PLATFORM | CfgType::FRONTEND                    )},
