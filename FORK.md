@@ -10,9 +10,8 @@ Este fork existe para uma mudança só, que também foi proposta ao projeto orig
 
 | Branch | O que tem |
 |---|---|
-| `master` | Igual ao `master` do [Gemba/skyscraper](https://github.com/Gemba/skyscraper) |
-| `feat_checksum_dat` | A mudança, num commit só, como foi enviada no PR ao projeto original |
-| `fork-notas` | `feat_checksum_dat` mais este arquivo e as imagens em `docs/fork/` |
+| `master` | O `master` do [Gemba/skyscraper](https://github.com/Gemba/skyscraper) com a mudança, este arquivo e as imagens em `docs/fork/` |
+| `feat_checksum_dat` | Só a mudança, num commit, sem os arquivos do fork. É a branch do PR ao projeto original |
 
 ## O problema
 
