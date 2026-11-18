@@ -1,43 +1,42 @@
 # Fork rsporteman/skyscraper
 
-> **English summary:** personal fork of [Gemba/skyscraper](https://github.com/Gemba/skyscraper).
-> It adds the `checksumDat=` option, which reads the CRC32/MD5/SHA1 that Screenscraper needs from a
-> Logiqx XML DAT instead of reading each game file. Branch `feat_checksum_dat` holds the change as
-> it was proposed upstream. This file documents the change, the Windows build and the validation.
-> Licensed under GPL-3.0 like upstream, see [License](#licença).
+Personal fork of [Gemba/skyscraper](https://github.com/Gemba/skyscraper). It adds one feature, the
+`checksumDat=` option: Skyscraper takes the CRC32, MD5 and SHA1 that ScreenScraper needs from a
+Logiqx XML DAT instead of reading every game file. A ready-to-run Windows build is included in
+[`dist/win64/`](dist/win64/README.md).
 
-Este fork existe para uma mudança só, que também foi proposta ao projeto original:
+**Fork version:** `3.22.0-dev-checksumdat`, based on upstream `master` at `c253bfe` (3.22.0-dev).
 
-| Branch | O que tem |
+| Branch | Contents |
 |---|---|
-| `master` | O `master` do [Gemba/skyscraper](https://github.com/Gemba/skyscraper) com a mudança, este arquivo e as imagens em `docs/fork/` |
-| `feat_checksum_dat` | Só a mudança, num commit, sem os arquivos do fork. É a branch do PR ao projeto original |
+| `master` | Upstream `master` + the checksumDat change + this file, the evidence images in `docs/fork/` and the Windows build in `dist/win64/` |
+| `feat_checksum_dat` | Only the change, as a single commit with no fork files. This is the branch intended for a pull request upstream (not opened yet) |
 
-## O problema
+## The problem
 
-Para identificar um jogo, o ScreenScraper recebe o CRC32, o MD5 e o SHA1 do arquivo do jogo. Até
-agora o Skyscraper lia o arquivo inteiro, sempre, para calcular esses três valores. Com imagens
-grandes (CHD ou ISO de vários GB) isso fica lento; em disco lento fica muito lento:
+To identify a game, ScreenScraper takes the CRC32, MD5 and SHA1 of the game file. Upstream
+Skyscraper always reads the whole file to compute them. With large images (multi-GB CHD or ISO) that
+is slow, and on a slow disk it is very slow:
 
-| Situação (mesmo PC, CHD de PS2 de ~1,5 GB) | Tempo só para os hashes |
+| Setup (same PC, ~1.5 GB PS2 CHD) | Time spent on checksums only |
 |---|---|
-| Skyscraper no WSL lendo o `G:` do Windows (`/mnt/g`) | ~2,5 min por jogo (lê de 1 KB em 1 KB, ~8 MB/s) |
-| Skyscraper nativo no Windows, disco local | ~10 s por jogo |
-| Com `checksumDat` | nada é lido |
+| Skyscraper in WSL reading the Windows drive (`/mnt/g`) | ~2.5 min per game (1 KB reads, ~8 MB/s) |
+| Native Windows Skyscraper, local disk | ~10 s per game |
+| With `checksumDat` | nothing is read |
 
-Num acervo de 574 jogos de PS2, só os hashes no WSL somavam cerca de 20 horas.
+For a 574-game PS2 collection the checksums alone added up to about 20 hours under WSL.
 
-## A mudança
+## The change
 
-Nova opção do `config.ini`, nas seções `[main]` e `[<PLATAFORMA>]`:
+New `config.ini` option, valid in `[main]` and `[<PLATFORM>]`:
 
 ```ini
 [ps2]
 checksumDat="G:/ROMs/_organizacao/skyscraper/ps2_checksums.dat"
 ```
 
-O valor é o caminho absoluto de um DAT no formato Logiqx XML, o mesmo do No-Intro, do Redump, do
-ClrMamePro e do RomVault:
+The value is the absolute path of a Logiqx XML DAT, the format used by No-Intro, Redump, ClrMamePro
+and RomVault:
 
 ```xml
 <datafile>
@@ -48,93 +47,103 @@ ClrMamePro e do RomVault:
 </datafile>
 ```
 
-Regras:
+Rules:
 
-- Um arquivo casa com um `<rom/>` quando o **nome do arquivo** (sem pasta) e o **tamanho em bytes**
-  são iguais. Aí os hashes do DAT são usados e o arquivo não é lido.
-- Entradas sem `size`, `crc`, `md5` ou `sha1` válidos são ignoradas, e o total delas é informado.
-- Mesmo nome e tamanho com hashes diferentes é ambíguo: o Skyscraper calcula os hashes como antes.
-- Sem entrada no DAT, ou com o tamanho diferente (arquivo mudou), também calcula como antes.
-- Só vale para o módulo `screenscraper`. Nos outros, a opção é ignorada com um aviso.
+- A file matches a `<rom/>` when the **file name** (directory stripped) and the **size in bytes** are
+  equal. The DAT checksums are then used and the file is not read.
+- Entries without a valid `size`, `crc`, `md5` or `sha1` are skipped, and their count is reported.
+- Same name and size with different checksums is ambiguous: Skyscraper computes them as before.
+- No DAT entry, or a different size (the file changed): computed as before.
+- Only the `screenscraper` module uses it. Other modules ignore it with a notice.
 
-Arquivos alterados:
+Changed files:
 
-| Arquivo | Mudança |
+| File | Change |
 |---|---|
-| `src/checksumdat.h/.cpp` | Classe nova `ChecksumDat`: lê o DAT (`QXmlStreamReader`) e busca por nome e tamanho |
-| `src/screenscraper.cpp/.h` | `getSearchNames()` usa o DAT; o cálculo antigo foi para `computeChecksums()` sem mudanças |
-| `src/settings.cpp/.h` | Opção `checksumDat`, validada como o `scummIni` (caminho absoluto, arquivo existe) |
-| `src/skyscraper.cpp/.h` | `loadChecksumDat()` carrega o DAT antes da raspagem |
-| `docs/CONFIGINI.md`, `config.ini.example` | Documentação da opção |
-| `test/checksumdat/` (novo), `test/getsearchnames/`, `test/settings/` | Testes |
+| `src/checksumdat.h/.cpp` | New `ChecksumDat` class: parses the DAT (`QXmlStreamReader`) and looks up by name and size |
+| `src/screenscraper.cpp/.h` | `getSearchNames()` uses the DAT; the original code moved unchanged to `computeChecksums()` |
+| `src/settings.cpp/.h` | `checksumDat` option, validated like `scummIni` (absolute path, file exists) |
+| `src/skyscraper.cpp/.h` | `loadChecksumDat()` loads the DAT before scraping |
+| `docs/CONFIGINI.md`, `config.ini.example` | Option documentation |
+| `test/checksumdat/` (new), `test/getsearchnames/`, `test/settings/` | Tests |
+| `VERSION.ini` (`master` only) | Fork version string |
 
-## Testes
+## Tests
 
-| Suíte | Casos novos |
+| Suite | New cases |
 |---|---|
-| `test/checksumdat` | acerto por nome e tamanho, hex em maiúsculas; tamanho diferente, nome desconhecido e caixa diferente não casam; nome com pasta (`/` e `\`); mesmo nome com tamanhos diferentes; duplicatas iguais (inclusive só na caixa) e ambíguas; 6 tipos de entrada incompleta; XML inválido; recarregar limpa o anterior; ler de arquivo e arquivo inexistente |
-| `test/getsearchnames` | a consulta ao ScreenScraper usa os hashes do DAT (valores falsos de propósito, para provar que o arquivo não foi lido); arquivo de 0 byte; tamanho diferente e DAT vazio voltam a calcular |
-| `test/settings` | `checksumDat` em `[main]`, sobreposto por `[<PLATAFORMA>]`, arquivo inexistente e caminho relativo dão erro |
+| `test/checksumdat` | hit by name and size, uppercase hex; different size, unknown name and different case do not match; name with a directory (`/` and `\`); same name with different sizes; identical duplicates (including case-only) and ambiguous ones; 6 kinds of incomplete entry; invalid XML; reload clears the previous data; load from file and missing file |
+| `test/getsearchnames` | the ScreenScraper query uses the DAT checksums (deliberately fake values, proving the file was not read); 0-byte file; size mismatch and empty DAT fall back to computing |
+| `test/settings` | `checksumDat` in `[main]`, overridden by `[<PLATFORM>]`; missing file and relative path raise an error |
 
-![Testes unitários](docs/fork/checksumdat_unit_tests.png)
+![Unit tests](docs/fork/checksumdat_unit_tests.png)
 
-No Windows, `test/pathtools`, `test/retroarch` e `test/settings` têm 6 falhas que **já existem no
-`master` original**: são testes que esperam `/` e recebem `\`. Conferi rodando o `master` sem a
-mudança. O CI do projeto original roda os testes no Linux.
+On Windows, `test/pathtools`, `test/retroarch` and `test/settings` have 6 failures that **already
+exist on upstream `master`**: those tests expect `/` and get `\`. Verified by running upstream
+`master` without the change. Upstream CI runs the tests on Linux.
 
-## Validação com jogos reais
+## Validation with real games
 
-Mesmo jogo, raspado duas vezes com `--refresh` (consulta completa ao ScreenScraper nas duas):
+Same game scraped twice with `--refresh` (full ScreenScraper query both times):
 
-![A/B com e sem checksumDat](docs/fork/checksumdat_ab_windows.png)
+![A/B with and without checksumDat](docs/fork/checksumdat_ab_windows.png)
 
-- A consulta enviada ao ScreenScraper é **idêntica** nas duas execuções (o mesmo CRC, MD5, SHA1,
-  nome e tamanho), e o jogo foi achado com 100% nas duas.
-- Sem o DAT, o `Skyscraper.exe` leu 1.360 MB (o CHD inteiro); com o DAT, 1,2 MB.
-- A diferença de tempo aqui é pequena porque o arquivo já estava no cache de disco do Windows; o
-  ganho de tempo aparece em disco frio, rede ou WSL (tabela acima).
+- The query sent to ScreenScraper is **identical** in both runs (same CRC, MD5, SHA1, name and
+  size), and the game was matched at 100% both times.
+- Without the DAT, `Skyscraper.exe` read 1,360 MB (the whole CHD); with the DAT, 1.2 MB.
+- The time difference is small here because the file was already in the Windows disk cache; the
+  gain shows on a cold disk, a network share or WSL (table above).
 
-## Como compilar no Windows
+The packaged build in `dist/win64/` was also checked with `PATH` reduced to `C:\Windows`: it starts,
+reports `3.22.0-dev-checksumdat`, loads the DAT, uses the DAT checksums for a 1.7 GB CHD and matches
+the game at 100% over HTTPS.
 
-Igual a `win32/README.md` do projeto, trocando o instalador da Qt pelo
-[aqtinstall](https://github.com/miurahr/aqtinstall), que não pede conta:
+## Building on Windows
+
+Same as upstream `win32/README.md`, but with [aqtinstall](https://github.com/miurahr/aqtinstall)
+instead of the Qt online installer (no Qt account needed):
 
 ```powershell
 python -m pip install --user aqtinstall
 python -m aqt install-qt windows desktop 6.8.2 win64_llvm_mingw --outputdir C:\Qt
 python -m aqt install-tool windows desktop tools_llvm_mingw1706 --outputdir C:\Qt
 $env:PATH = "C:\Qt\6.8.2\llvm-mingw_64\bin;C:\Qt\Tools\llvm-mingw1706_64\bin;$env:PATH"
-mkdir build; cd build
+mkdir build-dist; cd build-dist
 qmake ..\skyscraper.pro
-mingw32-make -j8
+mingw32-make -j8 release
+cd release
+windeployqt6 --no-translations Skyscraper.exe
 ```
 
-Detalhes:
+Notes:
 
-- O passo pós-build que copia as licenças da Qt de `C:\Qt\Licenses` falha com o aqtinstall, porque
-  essa pasta só vem no instalador oficial. O `Skyscraper.exe` fica pronto mesmo assim; rode à mão
-  os dois passos seguintes: `windeployqt6 release\Skyscraper.exe` e
-  `win32\deploy_mandatory_files.ps1 <repo> $env:USERPROFILE\.skyscraper`.
-- Os testes compilam com `qmake test_<nome>.pro -after "VERSION=3.22.0.999"`, porque o compilador
-  de recursos do Windows não aceita o `-dev` da versão (o `win32/skyscraper.pro` faz o mesmo).
-- Rode o `Skyscraper.exe` com a entrada padrão redirecionada quando for de um script; sem isso ele
-  pode ficar esperando.
+- The post-build step that copies the Qt licenses from `C:\Qt\Licenses` fails with aqtinstall,
+  because that folder only comes with the official installer. `Skyscraper.exe` is built anyway.
+- Do not pass `--release` to `windeployqt6`: with this Qt it stops with "Unable to find the platform
+  plugin".
+- `windeployqt6` does not copy the LLVM runtime. Copy `libc++.dll` and `libunwind.dll` from
+  `C:\Qt\6.8.2\llvm-mingw_64\bin`.
+- `opengl32sw.dll`, `D3Dcompiler_47.dll` and the ODBC, PostgreSQL and Mimer SQL drivers are not
+  needed by a command-line tool and are left out of `dist/win64/`.
+- Tests build with `qmake test_<name>.pro -after "VERSION=3.22.0.999"`, because the Windows resource
+  compiler rejects a version like `3.22.0-dev`.
+- When running `Skyscraper.exe` from a script, redirect standard input; otherwise it may wait.
 
-## Gerar o DAT dos seus arquivos
+## Creating the DAT for your files
 
-Se os arquivos são dumps verificados sem conversão, o DAT do grupo (Redump, No-Intro) já serve. Se
-você converteu para CHD ou compactou, precisa de um DAT com os hashes dos arquivos **atuais**:
-qualquer gerenciador de ROMs gera um, ou anote os hashes na hora da conversão. Aqui foi usado um
-script em PowerShell que lê cada arquivo uma vez, a 4 MB por leitura, e calcula os três hashes
-juntos.
+If your files are unmodified verified dumps, the group's DAT (Redump, No-Intro) already works. If
+you converted them to CHD or compressed them, you need a DAT with the checksums of the **current**
+files: any ROM manager can create one, or record the checksums when converting. This fork's author
+used a PowerShell script that reads each file once, in 4 MB blocks, and computes the three checksums
+in a single pass.
 
-## Licença
+## License
 
-O Skyscraper é software livre sob a **GNU General Public License v3.0**, e este fork também
-([LICENSE](LICENSE)). Os arquivos novos (`src/checksumdat.*`, `test/checksumdat/*`) têm o mesmo
-cabeçalho GPL-3.0-or-later dos arquivos do projeto. Os direitos autorais do código original
-continuam de Lars Muldjord, Gemba e demais contribuidores.
+Skyscraper is free software under the **GNU General Public License v3.0**, and so is this fork
+([LICENSE](LICENSE)). The new files (`src/checksumdat.*`, `test/checksumdat/*`) carry the same
+GPL-3.0-or-later header as the rest of the project. Copyright of the original code stays with Lars
+Muldjord, Gemba and the other contributors.
 
-Binários para Windows incluem DLLs da Qt, que é LGPL-3.0: quem redistribuir o `Skyscraper.exe` deve
-mandar junto as licenças da Qt (`LICENSE` e `LICENSE.GPL3-EXCEPT` da instalação da Qt) e o código-fonte
-correspondente. Este fork não publica binários.
+The Windows build in `dist/win64/` also contains third-party libraries, under their own licenses.
+Their notices are in [`dist/win64/licenses/`](dist/win64/licenses) and summarized in
+[`dist/win64/README.md`](dist/win64/README.md#licenses).

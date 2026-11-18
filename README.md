@@ -5,6 +5,12 @@
 
 <h4 align="center">Powerful and versatile game data scraper written in Qt and C++.</h4>
 
+> [!NOTE]
+> **Fork of [Gemba/skyscraper](https://github.com/Gemba/skyscraper)** (version `3.22.0-dev-checksumdat`). It adds the
+> [`checksumDat`](docs/CONFIGINI.md#checksumdat) option: precalculated CRC32/MD5/SHA1 for ScreenScraper, so large game
+> files do not have to be read. A ready-to-run Windows build is in [`dist/win64/`](dist/win64/README.md). Details in
+> [FORK.md](FORK.md). The rest of this README is upstream's.
+
 <p align="center">
   <a href="https://github.com/Gemba/skyscraper/actions/workflows/ci.yml">
     <img src="https://img.shields.io/github/actions/workflow/status/Gemba/skyscraper/ci.yml" alt="Build status">
@@ -165,6 +171,8 @@ Two Docker setups exist: One general in the `docker/` folder. The other resides 
 
 #### Windows <img src="docs/resources/os/ms-windows.svg" width="20px">
 Windows is not officially supported at this time. However, you [may roll your own](win32/README.md) Windows 64-bit version that works just fine with a recent Windows. It even supports colored terminal output.
+
+> **This fork:** a prebuilt Windows 64-bit build of `3.22.0-dev-checksumdat` is in [`dist/win64/`](dist/win64/README.md).
 
 ### Download, compile and install
 When you've installed the prerequisites as described above for Linux or macOS, you can install Skyscraper by typing in the following commands:

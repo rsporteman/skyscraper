@@ -76,3 +76,6 @@ platforms_idmap_local.csv
 
 # docker config
 docker/config.ini
+
+# fork: prebuilt Windows package
+!dist/win64/**
